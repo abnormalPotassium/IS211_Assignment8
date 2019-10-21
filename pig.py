@@ -121,7 +121,14 @@ class computerPlayer(player):
                     raise SystemExit
                 else:
                     print(f'\nThat\'s not a valid input {self.name}. Input \'r\' to roll, \'h\' to hold, or \'e\' to exit.\n')
-        
+
+class playerFactory:
+    def getPlayer(self,name,type):
+        if type == 'human':
+            return player(name)
+        elif type == 'computer':
+            return computerPlayer(name)
+
 class die:
     def __init__(self,sides = 6):
         self.sides = sides
@@ -162,15 +169,16 @@ class game:
         global winner
         global newgame
         dice = die()
+        factory = playerFactory()
         winner = False
         newgame = False
         print('\nExcellent! Let\'s begin! First let me know your names.')
-        player_names_human = [input(f'\nPlayer {x} please enter your name:  \n') for x in range(1,self.numPlayersHuman+1)]
-        player_names_computer = [f'AI#{x}' for x in range(1,self.numPlayersComputer+1)]
-        for y in player_names_human:
-            y = player(y)
-        for y in player_names_computer:
-            y = computerPlayer(y)
+        player_names_human = [[input(f'\nPlayer {x} please enter your name:  \n').title(),'human'] for x in range(1,self.numPlayersHuman+1)]
+        player_names_computer = [[f'AI#{x}', 'computer'] for x in range(1,self.numPlayersComputer+1)]
+        for x,y in player_names_human:
+            x = factory.getPlayer(x,y)
+        for x,y in player_names_computer:
+            x = factory.getPlayer(x,y)
 
     def game(self):
         global winner
