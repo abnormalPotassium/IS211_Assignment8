@@ -1,24 +1,13 @@
 import argparse
 import random
+import time
 random.seed(0)
 
 parse = argparse.ArgumentParser()
 parse.add_argument('--numPlayersHuman', nargs='?', default = '0')
 parse.add_argument('--numPlayersComputer', nargs='?', default = '0')
-parse.add_argument('--timed', nargs='?')
+parse.add_argument('--timed', const= True, nargs='?')
 args = parse.parse_args()
-
-numPlayersHuman = int(args.numPlayersHuman)
-numPlayersComputer = int(args.numPlayersComputer)
-numPlayers = numPlayersHuman + numPlayersComputer
-
-if numPlayers < 2:
-    print('You can\'t play Pig with only a single player just yet. Would you like to continue with 2 players?\n')
-    response = input('Yes or No:  \n').lower()
-    if response == 'yes' or response == 'y':
-        numPlayersHuman = 2
-    else:
-        raise SystemExit
 
 class player:
     _registry = []
@@ -140,28 +129,88 @@ class die:
     def roll(self):
         return random.randrange(1,self.sides)
 
-print('\nWelcome to the game of Pig, would you like to play?\n')
-consent = input('Yes or No:  \n').lower()
+class game:
+    def __init__(self,numPlayersHuman,numPlayersComputer):
+        self.numPlayersHuman = numPlayersHuman
+        self.numPlayersComputer = numPlayersComputer
+        self.numPlayers = self.numPlayersHuman + self.numPlayersComputer
 
-if consent == 'yes' or consent == 'y':
-    dice = die()
-    winner = False
-    newgame = False
-    print('\nExcellent! Let\'s begin! First let me know your names.')
-    player_names_human = [input(f'\nPlayer {x} please enter your name:  \n') for x in range(1,numPlayersHuman+1)]
-    player_names_computer = [f'AI#{x}' for x in range(1,numPlayersComputer+1)]
-    for y in player_names_human:
-        y = player(y)
-    for y in player_names_computer:
-        y = computerPlayer(y)
-    while winner == False:
-        for z in player._registry:
-            if winner == False and newgame == False:
-                z.turn()
+    def run(self):
+        self.playercheck()
+        self.introduction()
+        self.initialization()
+        self.game()
+
+    def playercheck(self):
+        if self.numPlayers < 2:
+            print('You can\'t play Pig with only a single player just yet. Would you like to continue with 2 players?\n')
+            response = input('Yes or No:  \n').lower()
+            if response == 'yes' or response == 'y':
+                self.numPlayersHuman = 2
             else:
-                newgame = False
-                break
+                raise SystemExit
 
+    def introduction(self):
+        print('\nWelcome to the game of Pig, would you like to play?\n')
+        consent = input('Yes or No:  \n').lower()
+        if consent != 'yes' and consent != 'y':
+            print('\nThat\'s alright, anytime you want to play just say yes.')
+            raise SystemExit
+
+    def initialization(self):
+        global dice
+        global winner
+        global newgame
+        dice = die()
+        winner = False
+        newgame = False
+        print('\nExcellent! Let\'s begin! First let me know your names.')
+        player_names_human = [input(f'\nPlayer {x} please enter your name:  \n') for x in range(1,self.numPlayersHuman+1)]
+        player_names_computer = [f'AI#{x}' for x in range(1,self.numPlayersComputer+1)]
+        for y in player_names_human:
+            y = player(y)
+        for y in player_names_computer:
+            y = computerPlayer(y)
+
+    def game(self):
+        global winner
+        global newgame
+        while winner == False:
+            for z in player._registry:
+                if winner == False and newgame == False:
+                    z.turn()
+                else:
+                    newgame = False
+                    break
+
+class timedGameProxy(game):
+    def game(self):
+        global winner
+        global newgame
+        time_start = time.time()
+        while winner == False:
+            for z in player._registry:
+                if time.time() - time_start > 60:
+                    self.timeout()
+                elif winner == False and newgame == False:
+                    z.turn()
+                else:
+                    newgame = False
+                    break
+
+    def timeout(self):
+        global winner
+        scores = {z.overall_score:z.name for z in player._registry}
+        winner = True
+        highest_score = max(scores.keys())
+        print(f'Time\'s up! The winner is {scores[highest_score]} with a score of {highest_score}!' )
+        raise SystemExit
+
+
+if args.timed:
+    pig = timedGameProxy(int(args.numPlayersHuman),numPlayersComputer = int(args.numPlayersComputer))
 else:
-    print('\nThat\'s alright, anytime you want to play just say yes.')
-    raise SystemExit
+    pig = game(int(args.numPlayersHuman),numPlayersComputer = int(args.numPlayersComputer))
+
+if __name__ == '__main__':
+    pig.run()
